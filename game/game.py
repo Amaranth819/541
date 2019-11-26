@@ -87,18 +87,28 @@ def getHitmask(image):
 def getRandomPipe():
     """returns a randomly generated pipe"""
     # y of gap between upper and lower pipe
-    gapYs = [20, 30, 40, 50, 60, 70, 80, 90]
+    gapYs = [20, 110, 30, 100, 40, 90, 50, 80, 60, 70]
     index = random.randint(0, len(gapYs)-1)
     gapY = gapYs[index]
 
     gapY += int(BASEY * 0.2)
     pipeX = SCREENWIDTH + 10
 
-    return [
-        {'x': pipeX, 'y': gapY - PIPE_HEIGHT},  # upper pipe
-        {'x': pipeX, 'y': gapY + PIPEGAPSIZE},  # lower pipe
-    ]
+    create_otto = np.random.rand() < 0.5
+    otto = None
+    if create_otto:
+        pipes = [
+            {'x': pipeX, 'y': gapY - PIPE_HEIGHT},  # upper pipe
+            {'x': pipeX, 'y': gapY + PIPEGAPSIZE[0]},  # lower pipe
+        ]
+        otto = {'x':pipes[1]['x'], 'y':pipes[1]['y'] - (int)((PIPEGAPSIZE[0] + OTTO_HEIGHT)/2)}
+    else:
+        pipes = [
+            {'x': pipeX, 'y': gapY - PIPE_HEIGHT},  # upper pipe
+            {'x': pipeX, 'y': gapY + PIPEGAPSIZE[1]},  # lower pipe
+        ]
 
+    return pipes, otto
 
 def showScore(score):
     """displays score in center of screen"""
@@ -115,7 +125,7 @@ def showScore(score):
         Xoffset += IMAGES['numbers'][digit].get_width()
 
 
-def checkCrash(player, upperPipes, lowerPipes):
+def checkCrash(player, upperPipes, lowerPipes, ottos):
     """returns True if player collders with base or pipes."""
     pi = player['index']
     player['w'] = IMAGES['player'][0].get_width()
@@ -146,6 +156,15 @@ def checkCrash(player, upperPipes, lowerPipes):
             if uCollide or lCollide:
                 return True
 
+        for otto in ottos:
+            ottoRect = pygame.Rect(otto['x'], otto['y'], OTTO_WIDTH, OTTO_HEIGHT)
+            pHitMask = HITMASKS['player'][pi]
+            oHitMask = HITMASKS['otto']
+            oCollide = pixelCollision(playerRect, ottoRect, pHitMask, oHitMask)
+
+            if oCollide:
+                return True
+
     return False
 
 def pixelCollision(rect1, rect2, hitmask1, hitmask2):
@@ -165,7 +184,7 @@ def pixelCollision(rect1, rect2, hitmask1, hitmask2):
     return False
 
 # Configuration
-FPS = 30
+FPS = 40
 SCREENWIDTH  = 288
 SCREENHEIGHT = 512
 pygame.init()
@@ -173,13 +192,15 @@ FPSCLOCK = pygame.time.Clock()
 SCREEN = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
 pygame.display.set_caption('Flappy Bird')
 IMAGES, HITMASKS = load()
-PIPEGAPSIZE = 100 # gap between upper and lower part of pipe
+PIPEGAPSIZE = [200, 100] # gap between upper and lower part of pipe
 BASEY = SCREENHEIGHT * 0.79
 PLAYER_WIDTH = IMAGES['player'][0].get_width()
 PLAYER_HEIGHT = IMAGES['player'][0].get_height()
 PIPE_WIDTH = IMAGES['pipe'][0].get_width()
 PIPE_HEIGHT = IMAGES['pipe'][0].get_height()
 BACKGROUND_WIDTH = IMAGES['background'].get_width()
+OTTO_HEIGHT = IMAGES['otto'].get_height()
+OTTO_WIDTH = IMAGES['otto'].get_width()
 PLAYER_INDEX_GEN = cycle([0, 1, 2, 1])
 
 class GameState:
@@ -190,8 +211,8 @@ class GameState:
         self.basex = 0
         self.baseShift = IMAGES['base'].get_width() - BACKGROUND_WIDTH
 
-        newPipe1 = getRandomPipe()
-        newPipe2 = getRandomPipe()
+        newPipe1, otto1 = getRandomPipe()
+        newPipe2, otto2 = getRandomPipe()
         self.upperPipes = [
             {'x': SCREENWIDTH, 'y': newPipe1[0]['y']},
             {'x': SCREENWIDTH + (SCREENWIDTH / 2), 'y': newPipe2[0]['y']},
@@ -200,6 +221,12 @@ class GameState:
             {'x': SCREENWIDTH, 'y': newPipe1[1]['y']},
             {'x': SCREENWIDTH + (SCREENWIDTH / 2), 'y': newPipe2[1]['y']},
         ]
+
+        self.ottos = []
+        if otto1 is not None:
+            self.ottos.append(otto1)
+        if otto2 is not None:
+            self.ottos.append(otto2)
 
         # player velocity, max velocity, downward accleration, accleration on flap
         self.pipeVelX = -4
@@ -256,21 +283,30 @@ class GameState:
             uPipe['x'] += self.pipeVelX
             lPipe['x'] += self.pipeVelX
 
+        for otto in self.ottos:
+            otto['x'] += self.pipeVelX
+
         # add new pipe when first pipe is about to touch left of screen
         if 0 < self.upperPipes[0]['x'] < 5:
-            newPipe = getRandomPipe()
+            newPipe, newOtto = getRandomPipe()
             self.upperPipes.append(newPipe[0])
             self.lowerPipes.append(newPipe[1])
+            if newOtto is not None:
+                self.ottos.append(newOtto)
 
         # remove first pipe if its out of the screen
         if self.upperPipes[0]['x'] < -PIPE_WIDTH:
             self.upperPipes.pop(0)
             self.lowerPipes.pop(0)
+            
+        if len(self.ottos) > 0:
+            if self.ottos[0]['x'] < -PIPE_WIDTH:
+                self.ottos.pop(0)
 
         # check if crash here
         isCrash= checkCrash({'x': self.playerx, 'y': self.playery,
                              'index': self.playerIndex},
-                            self.upperPipes, self.lowerPipes)
+                            self.upperPipes, self.lowerPipes, self.ottos)
         if isCrash:
             #SOUNDS['hit'].play()
             #SOUNDS['die'].play()
@@ -285,6 +321,9 @@ class GameState:
             SCREEN.blit(IMAGES['pipe'][0], (uPipe['x'], uPipe['y']))
             SCREEN.blit(IMAGES['pipe'][1], (lPipe['x'], lPipe['y']))
 
+        for otto in self.ottos:
+            SCREEN.blit(IMAGES['otto'], (otto['x'], otto['y']))
+
         SCREEN.blit(IMAGES['base'], (self.basex, BASEY))
         # print score so player overlaps the score
         showScore(self.score)
@@ -295,6 +334,7 @@ class GameState:
         pygame.display.update()
         FPSCLOCK.tick(FPS)
         #print self.upperPipes[0]['y'] + PIPE_HEIGHT - int(BASEY * 0.2)
+
         return image_data, reward, terminal
 
 game = GameState()
