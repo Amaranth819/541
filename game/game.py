@@ -184,7 +184,7 @@ def pixelCollision(rect1, rect2, hitmask1, hitmask2):
     return False
 
 # Configuration
-FPS = 40
+FPS = 30
 SCREENWIDTH  = 288
 SCREENHEIGHT = 512
 pygame.init()
@@ -224,13 +224,15 @@ class GameState:
 
         self.ottos = []
         if otto1 is not None:
+            otto1['x'] = SCREENWIDTH
             self.ottos.append(otto1)
         if otto2 is not None:
+            otto2['x'] = SCREENWIDTH + (SCREENWIDTH / 2)
             self.ottos.append(otto2)
 
         # player velocity, max velocity, downward accleration, accleration on flap
         self.pipeVelX = -4
-        self.playerVelY    =  0    # player's velocity along Y, default same as playerFlapped
+        self.playerVelY    =  8    # player's velocity along Y, default same as playerFlapped
         self.playerMaxVelY =  10   # max vel along Y, max descend speed
         self.playerMinVelY =  -8   # min vel along Y, max ascend speed
         self.playerAccY    =   1   # players downward accleration
