@@ -2,6 +2,7 @@ import pygame
 import sys
 import random
 import numpy as np
+import cv2
 from itertools import cycle
 import pygame.surfarray as surfarray
 from pygame.locals import *
@@ -339,17 +340,24 @@ class GameState:
 
         return image_data, reward, terminal
 
-game = GameState()
-actions = np.zeros(2)
-actions[0] = 1
-terminate = False
-
-while not terminate:
-    img_data, r, terminate = game.frame_step(actions)
+if __name__ == '__main__':
+    game = GameState()
     actions = np.zeros(2)
     actions[0] = 1
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
-                actions[0] = 0
-                actions[1] = 1
+    terminate = False
+    max_score = -1
+
+    for _ in range(1):
+        terminate = False
+        while not terminate:
+            img_data, r, terminate = game.frame_step(actions)
+            actions = np.zeros(2)
+            actions[0] = 1
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        actions[0] = 0
+                        actions[1] = 1
+            if max_score < game.score:
+                max_score = game.score
+    print("Best score: %d" % max_score)
