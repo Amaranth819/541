@@ -8,6 +8,7 @@ import os
 import game
 import numpy as np
 from dqn import DQN, resized_img, actions, weight_init
+from game import best_score
 from collections import deque
 from tensorboardX import SummaryWriter
 
@@ -29,19 +30,19 @@ def start(mode = 'train'):
     '''
         Configuration
     '''
-    observe_steps = 1000
+    observe_steps = 100
     memory_size = 50000
     epoch = 2000000
-    use_pretrained_model = False
-    pretrained_model_path = ''
-    save_model_path = './ckpt/'
-    save_model_name = 'model2.pkl'
-    log_path = './log'
-    init_epsilon = 1e-4
-    final_epsilon = 1e-5
+    use_pretrained_model = True
+    save_model_path = './ckpt/model3/'
+    save_model_name = 'model3.pkl'
+    pretrained_model_path = save_model_path + save_model_name
+    log_path = './log/log3/2.0/'
+    init_epsilon = 0.1
+    final_epsilon = 0.0001
     frame_per_action = 1
     epsilon = init_epsilon if mode is 'train' else 0
-    init_learning_rate = 1e-3
+    init_learning_rate = 1e-6
     batch_size = 32
     start_epoch = 1
     gamma = 0.99
@@ -73,7 +74,7 @@ def start(mode = 'train'):
                 for k, v in state.items():
                     if isinstance(v, torch.Tensor):
                         state[k] = v.cuda()
-        print("Load the pretrained model successfully!")
+        print("Load the pretrained model from %s successfully!" % pretrained_model_path)
     else:
         weight_init(net)
         print("First time training!")
@@ -85,9 +86,10 @@ def start(mode = 'train'):
     flappybird = game.GameState()
     memory_replay = deque()
     # No action
+    aidx = 0
     action = np.zeros([2])
-    action[0] = 1
-    img, reward, terminate = flappybird.frame_step(action)
+    action[aidx] = 1
+    img, reward, terminate = flappybird.frame_step(aidx)
     img = bgr2gray(img)
     # img_seq: 4x80x80
     img_seq = np.stack([img for _ in range(history_size)], axis = 0)
@@ -108,7 +110,7 @@ def start(mode = 'train'):
             if e % frame_per_action == 0:
                 # Epsilon greedy policy
                 if random.random() <= epsilon:
-                    idx = random.randint(0, 1)
+                    idx = 0 if random.random() < 0.8 else 1
                 else:
                     idx = torch.argmax(pred, dim = 1).item()
             else:
@@ -119,7 +121,7 @@ def start(mode = 'train'):
             epsilon -= (init_epsilon - final_epsilon) / epoch
 
             # Run an action
-            img_next, reward, terminate = flappybird.frame_step(action)
+            img_next, reward, terminate = flappybird.frame_step(idx)
             # img_next = data2tensor(bgr2gray(img_next), device).unsqueeze(0)
             img_next = bgr2gray(img_next)
             img_seq_next = np.stack([img_next, img_seq[0], img_seq[1], img_seq[2]], axis = 0)
@@ -129,11 +131,11 @@ def start(mode = 'train'):
             if len(memory_replay) > memory_size:
                 memory_replay.popleft()
 
-            if e <= observe_steps and e % 1000 == 0:
+            if e <= start_epoch + observe_steps and e % 1000 == 0:
                 print('Finish %d observations!' % e)
 
             # Train after observation
-            if e > observe_steps:
+            if e > start_epoch + observe_steps:
                 stage = 'TRAINING'
                 batch = random.sample(memory_replay, batch_size)
                 img_seq_b, img_seq_next_b, action_b, reward_b, terminate_b = zip(*batch)
@@ -160,7 +162,7 @@ def start(mode = 'train'):
                 optimizer.step()
 
                 # Print information
-                print('Epoch %d: stage = %s, Q_max = %.6f, action = %d, reward = %.1f' % (e, stage, torch.max(pred).item(), idx, reward))
+                print('Epoch %d: stage = %s, loss = %.6f, Q_max = %.6f, action = %d, reward = %.3f' % (e, stage, loss.item(), torch.max(pred).item(), idx, reward))
                 writer.add_scalar('Train/Loss', loss.item(), e)
                 writer.add_scalar('Train/Epsilon', epsilon, e)
                 writer.add_scalar('Train/Reward', reward, e)

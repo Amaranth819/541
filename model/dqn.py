@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import random
 
 resized_img = (80, 80)
 actions = 2 # action[0] = 1 means no flapping and action[1] = 1 means flapping.
@@ -29,10 +30,10 @@ class DQN(nn.Module):
             nn.ReLU(inplace = True)
         )
         # bs*64*10*10 -> bs*64*5*5
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size = 4, stride = 2, padding = 1),
-            nn.ReLU(inplace = True)
-        )
+        # self.conv3 = nn.Sequential(
+        #     nn.Conv2d(64, 64, kernel_size = 4, stride = 2, padding = 1),
+        #     nn.ReLU(inplace = True)
+        # )
         
         # # GRU
         # # bs*64*2*2 -> bs*1*256
@@ -45,7 +46,7 @@ class DQN(nn.Module):
 
         # FC
         self.fc_relu = nn.Sequential(
-            nn.Linear(64*5*5, 512),
+            nn.Linear(64*10*10, 512),
             nn.ReLU(inplace = True),
             nn.Linear(512, actions)
         )
@@ -57,11 +58,12 @@ class DQN(nn.Module):
     #     else:
     #         return torch.zeros(self.gru_layer_num, 1, self.gru_hidden_size)
 
+    # Finally get Q-Value
     def forward(self, x):
         # Encoder
         x = self.conv1(x)
         x = self.conv2(x)
-        x = self.conv3(x)
+        # x = self.conv3(x)
 
         # GRU
         # hidden = self.init_hidden()
@@ -83,6 +85,10 @@ def weight_init(net):
             each_module.weight.data.normal_(-0.1, 0.1)
             if each_module.bias is not None:
                 each_module.bias.data.zero_()
+
+def randomly_get_action():
+    idx = 0 if random.random() < 0.8 else 1
+    return idx
 
 if __name__ == '__main__':
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
