@@ -19,7 +19,7 @@ def load():
     IMAGES, HITMASKS = {}, {}
 
     # path of background
-    BACKGROUND_PATH = 'assets/sprites/background-day.png'
+    BACKGROUND_PATH = 'assets/sprites/background-black.png'
     IMAGES['background'] = pygame.image.load(BACKGROUND_PATH).convert()
 
     # path of pipe
@@ -95,7 +95,7 @@ def getRandomPipe():
     gapY += int(BASEY * 0.2)
     pipeX = SCREENWIDTH + 10
 
-    create_otto = np.random.rand() < 0.5
+    create_otto = np.random.rand() < 0
     otto = None
     if create_otto:
         pipes = [
@@ -193,7 +193,7 @@ FPSCLOCK = pygame.time.Clock()
 SCREEN = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
 pygame.display.set_caption('Flappy Bird')
 IMAGES, HITMASKS = load()
-PIPEGAPSIZE = [200, 100] # gap between upper and lower part of pipe
+PIPEGAPSIZE = [200, 200] # gap between upper and lower part of pipe
 BASEY = SCREENHEIGHT * 0.79
 PLAYER_WIDTH = IMAGES['player'][0].get_width()
 PLAYER_HEIGHT = IMAGES['player'][0].get_height()
@@ -243,8 +243,8 @@ class GameState:
     def frame_step(self, input_actions):
         pygame.event.pump()
 
-        reward = 0.1
-        terminal = False
+        reward = 1
+        terminate = False
 
         if sum(input_actions) != 1:
             raise ValueError('Multiple input actions!')
@@ -264,7 +264,7 @@ class GameState:
             if pipeMidPos <= playerMidPos < pipeMidPos + 4:
                 self.score += 1
                 #SOUNDS['point'].play()
-                reward = 1
+                reward = 5
 
         # playerIndex basex change
         if (self.loopIter + 1) % 3 == 0:
@@ -313,9 +313,9 @@ class GameState:
         if isCrash:
             #SOUNDS['hit'].play()
             #SOUNDS['die'].play()
-            terminal = True
+            terminate = True
             self.__init__()
-            reward = -1
+            reward = -100
 
         # draw sprites
         SCREEN.blit(IMAGES['background'], (0,0))
@@ -329,7 +329,7 @@ class GameState:
 
         SCREEN.blit(IMAGES['base'], (self.basex, BASEY))
         # print score so player overlaps the score
-        showScore(self.score)
+        # showScore(self.score)
         SCREEN.blit(IMAGES['player'][self.playerIndex],
                     (self.playerx, self.playery))
 
@@ -338,7 +338,7 @@ class GameState:
         FPSCLOCK.tick(FPS)
         #print self.upperPipes[0]['y'] + PIPE_HEIGHT - int(BASEY * 0.2)
 
-        return image_data, reward, terminal
+        return image_data, reward, terminate
 
 if __name__ == '__main__':
     game = GameState()
@@ -346,11 +346,17 @@ if __name__ == '__main__':
     actions[0] = 1
     terminate = False
     max_score = -1
+    # i = 0
 
     for _ in range(1):
         terminate = False
         while not terminate:
             img_data, r, terminate = game.frame_step(actions)
+            # img_data = cv2.cvtColor(cv2.resize(img_data, (80, 80)), cv2.COLOR_BGR2GRAY)
+            # _, img_data = cv2.threshold(img_data, 1, 255, cv2.THRESH_BINARY)
+            # print(img_data.shape)
+            # cv2.imwrite("test%d.jpg" % i, img_data)
+            # i += 1
             actions = np.zeros(2)
             actions[0] = 1
             for event in pygame.event.get():
