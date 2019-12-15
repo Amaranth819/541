@@ -42,7 +42,7 @@ def start(mode = 'train'):
     final_epsilon = 0.0001
     frame_per_action = 1
     epsilon = init_epsilon if mode is 'train' else 0
-    init_learning_rate = 1e-5
+    init_learning_rate = 1e-2
     batch_size = 32
     start_epoch = 1
     gamma = 0.99
@@ -60,7 +60,7 @@ def start(mode = 'train'):
     net = DQN().to(device).float()
     loss_func = torch.nn.MSELoss()
     optimizer = torch.optim.SGD(net.parameters(), lr = init_learning_rate, momentum = 0.9)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 1000000, gamma = 0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 500000, gamma = 0.1)
     # Read the pretrained model
     if use_pretrained_model:
         checkpoint = torch.load(pretrained_model_path)
@@ -110,12 +110,12 @@ def start(mode = 'train'):
             if e % frame_per_action == 0:
                 # Epsilon greedy policy
                 if random.random() <= epsilon:
-                    idx = 0 if random.random() < 0.8 else 1
+                    idx = random.randint(0,1)
                 else:
                     idx = torch.argmax(pred, dim = 1).item()
             else:
                 idx = 0
-            action[idx] = 1
+            action[random.randint(0,1)] = 1
 
             # Scale down epsilon
             epsilon -= (init_epsilon - final_epsilon) / epoch
