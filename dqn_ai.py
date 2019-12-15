@@ -146,7 +146,7 @@ def start(mode = 'train'):
                 # img_seq_next_b_ts = data2tensor(np.stack([ib for ib in img_seq_next_b], axis = 0), device)
                 img_seq_next_b_ts = torch.from_numpy(np.stack([ib for ib in img_seq_next_b], axis = 0)).to(device)
                 # action_b_ts = data2tensor(action_b, device)
-                action_b_ts = torch.from_numpy(action_b).to(device)
+                action_b_ts = torch.from_numpy(np.array(list(action_b))).to(device)
                 out = net(img_seq_b_ts)
                 out_next = net(img_seq_next_b_ts)
                 # y_b = torch.tensor([reward_b[bi] if terminate_b[bi] else reward_b[bi] + gamma * torch.max(out_next).item() for bi in range(batch_size)]).to(device)
@@ -156,8 +156,8 @@ def start(mode = 'train'):
                         y_b.append(r)
                     else:
                         y_b.append(r + gamma * torch.max(p).item())
-                y_b = data2tensor(y_b, device)
-                y_b = torch.from_numpy(y_b).to(device)
+                # y_b = data2tensor(y_b, device)
+                y_b = torch.from_numpy(np.array(y_b, dtype = np.float32)).to(device)
                 q_value_b = torch.sum(out * action_b_ts, dim = 1)
 
                 # Calculate loss and back propagation
