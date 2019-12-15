@@ -30,19 +30,19 @@ def start(mode = 'train'):
     '''
         Configuration
     '''
-    observe_steps = 100
+    observe_steps = 1000
     memory_size = 50000
     epoch = 2000000
-    use_pretrained_model = True
-    save_model_path = './ckpt/model3/'
-    save_model_name = 'model3.pkl'
+    use_pretrained_model = False
+    save_model_path = './ckpt/model5/'
+    save_model_name = 'model.pkl'
     pretrained_model_path = save_model_path + save_model_name
-    log_path = './log/log3/2.0/'
+    log_path = './log/log5/1.0/'
     init_epsilon = 0.1
     final_epsilon = 0.0001
     frame_per_action = 1
     epsilon = init_epsilon if mode is 'train' else 0
-    init_learning_rate = 1e-6
+    init_learning_rate = 1e-5
     batch_size = 32
     start_epoch = 1
     gamma = 0.99
@@ -59,8 +59,8 @@ def start(mode = 'train'):
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
     net = DQN().to(device).float()
     loss_func = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr = init_learning_rate, weight_decay = 1e-4)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 100000, gamma = 0.1)
+    optimizer = torch.optim.SGD(net.parameters(), lr = init_learning_rate, momentum = 0.9)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 1000000, gamma = 0.5)
     # Read the pretrained model
     if use_pretrained_model:
         checkpoint = torch.load(pretrained_model_path)
