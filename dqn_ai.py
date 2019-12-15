@@ -18,6 +18,7 @@ from tensorboardX import SummaryWriter
 def bgr2gray(rgb_img):
     gray_img = cv2.cvtColor(cv2.resize(rgb_img, resized_img), cv2.COLOR_BGR2GRAY)
     _, gray_img = cv2.threshold(gray_img, 1, 255, cv2.THRESH_BINARY)
+    gray_img = np.array(gray_img, dtype = np.float32)
     return gray_img
 
 def data2tensor(data, device):
@@ -87,7 +88,7 @@ def start(mode = 'train'):
     memory_replay = deque()
     # No action
     aidx = 0
-    action = np.zeros([2])
+    action = np.zeros([2], dtype = np.float32)
     action[aidx] = 1
     img, reward, terminate = flappybird.frame_step(aidx)
     img = bgr2gray(img)
@@ -106,7 +107,7 @@ def start(mode = 'train'):
             pred = net(img_seq_ts)
 
             # Take an action
-            idx, action = 0, np.zeros([actions])
+            idx, action = 0, np.zeros([actions], dtype = np.float32)
             if e % frame_per_action == 0:
                 # Epsilon greedy policy
                 if random.random() <= epsilon:
@@ -140,9 +141,12 @@ def start(mode = 'train'):
                 batch = random.sample(memory_replay, batch_size)
                 img_seq_b, img_seq_next_b, action_b, reward_b, terminate_b = zip(*batch)
 
-                img_seq_b_ts = data2tensor(np.stack([ib for ib in img_seq_b], axis = 0), device)
-                img_seq_next_b_ts = data2tensor(np.stack([ib for ib in img_seq_next_b], axis = 0), device)
-                action_b_ts = data2tensor(action_b, device)
+                # img_seq_b_ts = data2tensor(np.stack([ib for ib in img_seq_b], axis = 0), device)
+                img_seq_b_ts = torch.from_numpy(np.stack([ib for ib in img_seq_b], axis = 0)).to(device)
+                # img_seq_next_b_ts = data2tensor(np.stack([ib for ib in img_seq_next_b], axis = 0), device)
+                img_seq_next_b_ts = torch.from_numpy(np.stack([ib for ib in img_seq_next_b], axis = 0)).to(device)
+                # action_b_ts = data2tensor(action_b, device)
+                action_b_ts = torch.from_numpy(action_b).to(device)
                 out = net(img_seq_b_ts)
                 out_next = net(img_seq_next_b_ts)
                 # y_b = torch.tensor([reward_b[bi] if terminate_b[bi] else reward_b[bi] + gamma * torch.max(out_next).item() for bi in range(batch_size)]).to(device)
@@ -153,6 +157,7 @@ def start(mode = 'train'):
                     else:
                         y_b.append(r + gamma * torch.max(p).item())
                 y_b = data2tensor(y_b, device)
+                y_b = torch.from_numpy(y_b).to(device)
                 q_value_b = torch.sum(out * action_b_ts, dim = 1)
 
                 # Calculate loss and back propagation
