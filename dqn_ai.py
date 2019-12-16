@@ -217,7 +217,7 @@ def start(mode, mp, mn, use_model):
                 action[idx] = 1
 
                 # Scale down epsilon
-                epsilon -= (init_epsilon - final_epsilon) / epoch
+                epsilon -= (init_epsilon - final_epsilon) / 2000000
 
                 # Run an action
                 img_next, reward, terminate = flappybird.frame_step(idx)
