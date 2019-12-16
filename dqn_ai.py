@@ -6,6 +6,7 @@ import cv2
 import random
 import os
 import game
+import argparse
 import numpy as np
 from dqn import DQN, resized_img, actions, weight_init
 from game import best_score
@@ -111,7 +112,7 @@ def start(mode = 'train'):
     observe_steps = 5
     memory_size = 1000
     epoch = 5000 # Game 
-    use_pretrained_model = False
+    use_pretrained_model = True
     save_model_path = './ckpt/model5/'
     save_model_name = 'model.pkl'
     pretrained_model_path = save_model_path + save_model_name
@@ -172,7 +173,6 @@ def start(mode = 'train'):
     '''
         Data structures
     '''
-    writer = SummaryWriter(log_path)
     flappybird = game.GameState()
     memory_replay = deque()
     # No action
@@ -192,6 +192,7 @@ def start(mode = 'train'):
     if mode is 'train':
         net.train()
         stage = 'OBSERVE'
+        writer = SummaryWriter(log_path)
         print('Start training...')
         for e in range(start_epoch, epoch + start_epoch):
             per_game_memory = deque()
@@ -324,9 +325,34 @@ def start(mode = 'train'):
 
     # Test DQN
     else:
-        pass
-    
+        net.eval()
+        print('Start testing...')
+        game_num = 25
+        game_score = 0
+        eval_best_score = 0
+        for e in range(game_num):
+            terminate = False
+            game_score = 0
+            while not terminate:
+                with torch.no_grad():
+                    img_seq_ts = Variable(torch.from_numpy(img_seq).unsqueeze(0).to(device))
+                    pred = net(img_seq_ts)
+                    idx = torch.argmax(pred, dim = 1).item()
+                    img_next, reward, terminate = flappybird.frame_step(idx)
+                    img_next = bgr2gray(img_next)
+                    img_seq = np.stack([img_next, img_seq[0], img_seq[1], img_seq[2]], axis = 0)
+                    score = flappybird.score
+                    if score > game_score:
+                        game_score = score
+                    if score > eval_best_score:
+                        eval_best_score = score
+            print('The score at game %d is %d.' % (e, game_score))
+        print('The best score is %d.' % eval_best_score)
 
 
 if __name__ == '__main__':
-    start(mode = 'train')
+    p = argparse.ArgumentParser()
+    p.add_argument('--m', help = 'Indicate the mode.', default = 'train')
+
+    mode = p.parse_args().m
+    start(mode = mode)

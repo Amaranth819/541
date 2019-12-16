@@ -88,7 +88,7 @@ def getHitmask(image):
 def getRandomPipe():
     """returns a randomly generated pipe"""
     # y of gap between upper and lower pipe
-    gapYs = [20, 110, 30, 100, 40, 90, 50, 80, 60, 70]
+    gapYs = [20, 30 ,40, 50, 60, 70, 80, 90, 100]
     index = random.randint(0, len(gapYs)-1)
     gapY = gapYs[index]
 
@@ -193,7 +193,12 @@ FPSCLOCK = pygame.time.Clock()
 SCREEN = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
 pygame.display.set_caption('Flappy Bird')
 IMAGES, HITMASKS = load()
-PIPEGAPSIZE = [200, 200] # gap between upper and lower part of pipe
+# gap between upper and lower part of pipe
+# PIPEGAPSIZE = [200, 200] 
+# PIPEGAPSIZE = [180, 180] 
+# PIPEGAPSIZE = [160, 160] 
+# PIPEGAPSIZE = [140, 140] 
+PIPEGAPSIZE = [120, 120]
 BASEY = SCREENHEIGHT * 0.79
 PLAYER_WIDTH = IMAGES['player'][0].get_width()
 PLAYER_HEIGHT = IMAGES['player'][0].get_height()
