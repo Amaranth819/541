@@ -102,7 +102,7 @@ def getHeightDecision(ex_max, height):
     return result
 
 
-def start(mode = 'train'):
+def start(mode, mp, mn, use_model):
     if mode not in ['train', 'test']:
         raise ValueError('Unknown mode!')
 
@@ -112,11 +112,11 @@ def start(mode = 'train'):
     observe_steps = 5
     memory_size = 1000
     epoch = 5000 # Game 
-    use_pretrained_model = True
-    save_model_path = './ckpt/model5/'
-    save_model_name = 'model.pkl'
+    use_pretrained_model = use_model
+    save_model_path = mp
+    save_model_name = mn
     pretrained_model_path = save_model_path + save_model_name
-    log_path = './log/log5/1.0/'
+    log_path = './log/'
     init_epsilon = 0.1
     final_epsilon = 0.0001
     frame_per_action = 1
@@ -330,6 +330,7 @@ def start(mode = 'train'):
         game_num = 25
         game_score = 0
         eval_best_score = 0
+        all_scores = []
         for e in range(game_num):
             terminate = False
             game_score = 0
@@ -347,12 +348,21 @@ def start(mode = 'train'):
                     if score > eval_best_score:
                         eval_best_score = score
             print('The score at game %d is %d.' % (e, game_score))
+            all_scores.append(game_score)
         print('The best score is %d.' % eval_best_score)
+        print('The average score is %.3f.' % np.mean(all_scores))
 
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
-    p.add_argument('--m', help = 'Indicate the mode.', default = 'train')
+    p.add_argument('--mode', help = 'Indicate the mode.', default = 'train')
+    p.add_argument('--model_path', default = './model')
+    p.add_argument('--model_name', default = 'model.pkl')
+    p.add_argument('--use_model', default = False)
 
-    mode = p.parse_args().m
-    start(mode = mode)
+    config = p.parse_args()
+    mode = config.mode
+    mp = config.model_path
+    mn = config.model_name
+    use_model = config.use_model
+    start(mode = mode, mp = mp, mn = mn, use_model = use_model)
