@@ -194,11 +194,11 @@ SCREEN = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
 pygame.display.set_caption('Flappy Bird')
 IMAGES, HITMASKS = load()
 # gap between upper and lower part of pipe
-# PIPEGAPSIZE = [200, 200] 
+PIPEGAPSIZE = [200, 200] 
 # PIPEGAPSIZE = [180, 180] 
 # PIPEGAPSIZE = [160, 160] 
 # PIPEGAPSIZE = [140, 140] 
-PIPEGAPSIZE = [120, 120]
+# PIPEGAPSIZE = [120, 120]
 BASEY = SCREENHEIGHT * 0.79
 PLAYER_WIDTH = IMAGES['player'][0].get_width()
 PLAYER_HEIGHT = IMAGES['player'][0].get_height()
